@@ -8,136 +8,207 @@
 
 #include <vector>
 #include <string>
-#include <type_traits>
 #include <FreeImage.h>
 
 using byte = unsigned char;
+using RGBTriple= RGBTRIPLE;
+using RGBQuad = RGBQUAD;
 
 /**
-  * \class Image
-  * \brief Represents an image in memory.
+  * \enum ImageType
+  * \brief Enumerate image types
   */
+enum class ImageType : typename std::underlying_type<FREE_IMAGE_TYPE>::type {
+    Bitmap  = FIT_BITMAP,
+    Uint16  = FIT_UINT16,
+    Int16   = FIT_INT16,
+    Uint32  = FIT_UINT32,
+    Int32   = FIT_INT32,
+    Float   = FIT_FLOAT,
+    Double  = FIT_DOUBLE,
+    Complex = FIT_COMPLEX,
+    Rgb16   = FIT_RGB16,
+    Rgba16  = FIT_RGBA16,
+    Rgbf    = FIT_RGBF,
+    Rgbaf   = FIT_RGBAF,
+    Unknown = FIT_UNKNOWN
+};
+
+/**
+  * \enum ImageFormat
+  * \brief Represent the supported image file formats.
+  */
+enum class ImageFormat {
+    /** Bitmap format */
+    Bmp,
+    /** Bitmap format, with run length encoding */
+    BmpRle,
+    /** PNG format */
+    Png
+};
+
+template <class T>
 class Image {
     public:
-        /**
-          * \enum Type
-          * \brief Enumerate image types
-          */
-        enum class Type : typename std::underlying_type<FREE_IMAGE_TYPE>::type {
-            Bitmap  = FIT_BITMAP,
-            Uint16  = FIT_UINT16,
-            Int16   = FIT_INT16,
-            Uint32  = FIT_UINT32,
-            Int32   = FIT_INT32,
-            Float   = FIT_FLOAT,
-            Double  = FIT_DOUBLE,
-            Complex = FIT_COMPLEX,
-            Rgb16   = FIT_RGB16,
-            Rgba16  = FIT_RGBA16,
-            Rgbf    = FIT_RGBF,
-            Rgbaf   = FIT_RGBAF,
-            Unknown = FIT_UNKNOWN
-        };
-
-        /**
-          * \brief Construct an empty image of specified dimensions and bit depth.
-          * \param width Image width
-          * \param height Image height
-          * \param t Type of the Image
-          * \param bpp Image Depth, in bits per pixel
-          */
-        Image(unsigned int width, unsigned int height, Type t = Type::Bitmap, int bpp = 24);
-
-        /**
-          * \brief Construct an Image object that is not bound to any image.
-          */
-        Image();
-
-        /**
-          * \brief Construct an image from a file.
-          * In theory, any format supported by the FreeImage library should work.
-          */
-        explicit Image(std::string const& filename);
-        /* Destructor */
         virtual ~Image();
 
-        /**
-          * \enum Format
-          * \brief Represent the supported image file formats.
-          */
-        enum class Format {
-            /** Bitmap format */
-            Bmp,
-            /** Bitmap format, with run length encoding */
-            BmpRle,
-            /** PNG format */
-            Png };
-
-        /**
-          * \brief Construct a copy of an Image.
-          */
+        /* Copy constructor */
         Image(Image const& other);
-        /**
-          * \brief Image assignment operator.
-          */
+        /* Move constructor */
+        Image(Image&& other);
+        /* Assignment operator */
         Image& operator=(Image const& other);
-
-        /**
-          * \brief Return false if the image is empty, i.e. it contains only metadata
-          * and no pixel data.
-          */
-        bool hasPixels() const;
+        /* Move-assignment operator */
+        Image& operator=(Image&& other);
 
         /**
           * \brief Return the width of the image.
           */
-        unsigned int width() const;
+        int width() const;
 
         /**
           * \brief Return the height of the image.
           */
-        unsigned int height() const;
+        int height() const;
 
-        unsigned int bpp() const;
+        virtual T getPixel(int x, int y) const = 0;
+        virtual void setPixel(int x, int y, T pixel) = 0;
 
-        Type type() const;
-
-        /**
-          * \brief Return the color of the specified pixel.
-          */
-        RGBQUAD getPixel(unsigned int x, unsigned int y) const;
-
-        /**
-          * \brief Set the color of the specified pixel.
-          */
-        void setPixel(unsigned int x, unsigned int y, RGBQUAD color);
-
-        const byte* getBits() const;
-        const byte* getScanLine(int scanLine) const;
-
-        /**
-          * \brief Create an image from an array RGB values.
-          * \tparam T Type of the pixel components
-          * \param vec RGB data array
-          * \param width Image width
-          * \param height Image height
-          * \param flip Flip the image vertically
-          */
-        template <class T>
-        static typename std::enable_if<std::is_arithmetic<T>::value, Image>::type
-            from_rgb(std::vector<T> vec, int width, int height, bool flip = false);
-        static Image from_greyscale(std::vector<unsigned short> vec, int width, int height, bool flip = false);
+        virtual const T* getBits() const;
+        virtual const T* getScanline(int scanline) const;
 
         /**
           * \brief Save an image to the disk.
           * \param filename File name
           * \param f Image format
           */
-        bool save(std::string const& filename, Format f) const;
+        void save(std::string const& filename, ImageFormat f) const;
+
+    protected:
+        /* Default constructor */
+        Image(int width, int height, ImageType t, int bpp, unsigned int rMask,
+                unsigned int gMask, unsigned int bMask);
+
+        FIBITMAP* m_image;
+        int m_width;
+        int m_height;
+        explicit Image(FIBITMAP* fi);
+};
+
+/**
+  * \class GreyscaleImage
+  * \brief Represents an 8-bit greyscale image.
+  */
+class GreyscaleImage : public Image<byte> {
+    public:
+        /**
+          * \brief Construct an empty image of specified dimensions and bit depth.
+          * \param width Image width
+          * \param height Image height
+          */
+        GreyscaleImage(int width, int height);
+
+        /* Destructor */
+        virtual ~GreyscaleImage();
+
+        /**
+          * \brief Copy constructor.
+          */
+        GreyscaleImage(GreyscaleImage const& other);
+
+        /**
+          * \brief Assignment operator.
+          */
+        GreyscaleImage& operator=(GreyscaleImage const& other);
+
+        /**
+          * \brief Move constructor.
+          */
+        GreyscaleImage(GreyscaleImage&& other);
+
+        /**
+          * \brief Move-assignment operator.
+          */
+        GreyscaleImage& operator=(GreyscaleImage&& other);
+
+        /**
+          * \brief Return the color of the specified pixel.
+          */
+        virtual byte getPixel(int x, int y) const;
+
+        /**
+          * \brief Set the color of the specified pixel.
+          */
+        virtual void setPixel(int x, int y, byte pixel);
+
+        /**
+          * \brief Construct an image from a file.
+          * In theory, any format supported by the FreeImage library should work.
+          */
+        static GreyscaleImage load(std::string const& filename);
+
+        static GreyscaleImage fromRawData(std::vector<byte> vec, int width, int height, bool flip = false);
 
     private:
-        explicit Image(FIBITMAP* other);
-        FIBITMAP* m_image;
+        explicit GreyscaleImage(FIBITMAP* fi);
+};
+
+/**
+  * \class RGBImage
+  * \brief Represents an 8-bit greyscale image.
+  */
+class RGBImage : public Image<RGBTriple> {
+    public:
+        /**
+          * \brief Construct an empty image of specified dimensions and bit depth.
+          * \param width Image width
+          * \param height Image height
+          */
+        RGBImage(int width, int height);
+
+        /* Destructor */
+        virtual ~RGBImage();
+
+        /**
+          * \brief Copy constructor.
+          */
+        RGBImage(RGBImage const& other);
+
+        /**
+          * \brief Assignment operator.
+          */
+        RGBImage& operator=(RGBImage const& other);
+
+        /**
+          * \brief Move constructor.
+          */
+        RGBImage(RGBImage&& other);
+
+        /**
+          * \brief Move-assignment operator.
+          */
+        RGBImage& operator=(RGBImage&& other);
+
+        /**
+          * \brief Return the color of the specified pixel.
+          */
+        virtual RGBTriple getPixel(int x, int y) const;
+
+        /**
+          * \brief Set the color of the specified pixel.
+          */
+        virtual void setPixel(int x, int y, RGBTriple pixel);
+
+        /**
+          * \brief Construct an image from a file.
+          * In theory, any format supported by the FreeImage library should work.
+          */
+        static RGBImage load(std::string const& filename);
+
+        static RGBImage fromRawData(std::vector<RGBTriple> vec, int width, int height, bool flip = false);
+
+    private:
+        explicit RGBImage(FIBITMAP* fi);
 };
 
 #include "image.inl"

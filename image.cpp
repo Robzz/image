@@ -5,24 +5,57 @@
 
 using namespace std;
 
-Image::Image() :
-    m_image(nullptr)
+GreyscaleImage::GreyscaleImage(int width, int height) :
+    Image<byte>(width, height, ImageType::Bitmap, 8, 0xFF, 0xFF, 0xFF)
 { }
 
+GreyscaleImage::GreyscaleImage(FIBITMAP* fi) :
+    Image<byte>(fi)
+{  }
 
-Image::Image(unsigned int width, unsigned int height, Image::Type t, int bpp) :
-    m_image(nullptr)
-{
-    if(t == Image::Type::Unknown)
-        throw runtime_error("Invalid image type");
-    m_image = FreeImage_AllocateT(static_cast<FREE_IMAGE_TYPE>(t), static_cast<int>(width),
-                                  static_cast<int>(height), static_cast<int>(bpp));
-    if(!m_image)
-        throw runtime_error("Cannot create image");
+GreyscaleImage::~GreyscaleImage() { }
+
+GreyscaleImage::GreyscaleImage(GreyscaleImage const& other) :
+    Image<byte>(other)
+{ }
+
+GreyscaleImage& GreyscaleImage::operator=(GreyscaleImage const& other) {
+    *static_cast<Image<byte>*>(this) = other;
+    return *this;
 }
 
-Image::Image(string const& filename) :
-    m_image(nullptr)
+byte GreyscaleImage::getPixel(int x, int y) const {
+    RGBQUAD quad;
+    if(!FreeImage_GetPixelColor(m_image, x, y, &quad)) {
+        throw runtime_error("Cannot read pixel");
+    }
+    return quad.rgbRed;
+}
+
+void GreyscaleImage::setPixel(int x, int y, byte pixel) {
+    RGBQUAD quad = {pixel, pixel, pixel, 0};
+    if(!FreeImage_SetPixelColor(m_image, x, y, &quad)) {
+        throw runtime_error("Cannot set pixel value");
+    }
+}
+
+GreyscaleImage GreyscaleImage::fromRawData(vector<byte> vec, int width, int height, bool flip) {
+    if(vec.size() != static_cast<size_t>(width * height)) {
+        throw runtime_error("Input vector has wrong size");
+    }
+    GreyscaleImage img(width, height);
+    for(int y = 0 ; y != height ; ++y) {
+        int scanlineOffset = width * y;
+        for(int x = 0 ; x != width ; ++x) {
+            byte pixel = vec[x + scanlineOffset];
+            img.setPixel(x, flip? height-y : y, pixel);
+        }
+    }
+
+    return img;
+}
+
+GreyscaleImage GreyscaleImage::load(string const& filename)
 {
     FREE_IMAGE_FORMAT fif = FreeImage_GetFileType(filename.c_str());
     if(fif == FIF_UNKNOWN) {
@@ -30,96 +63,74 @@ Image::Image(string const& filename) :
         if(fif == FIF_UNKNOWN)
             throw runtime_error("Cannot open image");
     }
-    m_image = FreeImage_Load(fif, filename.c_str());
+    auto fi = FreeImage_Load(fif, filename.c_str());
+    if(!fi) {
+        throw runtime_error("Cannot open image");
+    }
+    return GreyscaleImage(fi);
 }
 
-Image::Image(FIBITMAP* other) :
-    m_image(FreeImage_Clone(other))
+RGBImage::RGBImage(int width, int height) :
+    Image<RGBTriple>(width, height, ImageType::Bitmap, 24, 0x0000FF, 0x00FF00, 0xFF0000)
 { }
 
-Image::~Image() {
-    if(m_image)
-        FreeImage_Unload(m_image);
-}
+RGBImage::RGBImage(FIBITMAP* fi) :
+    Image<RGBTriple>(fi)
+{  }
 
-Image::Image(Image const& other) :
-    m_image(FreeImage_Clone(other.m_image))
+RGBImage::~RGBImage() { }
+
+RGBImage::RGBImage(RGBImage const& other) :
+    Image<RGBTriple>(other)
 { }
 
-Image& Image::operator=(Image const& other) {
-    m_image = FreeImage_Clone(other.m_image);
+RGBImage& RGBImage::operator=(RGBImage const& other) {
+    *static_cast<Image<RGBTriple>*>(this) = other;
     return *this;
 }
 
-bool Image::hasPixels() const {
-    return FreeImage_HasPixels(m_image);
-}
-
-unsigned int Image::width() const {
-    return FreeImage_GetWidth(m_image);
-}
-
-unsigned int Image::height() const {
-    return FreeImage_GetHeight(m_image);
-}
-
-unsigned int Image::bpp() const {
-    return FreeImage_GetBPP(m_image);
-}
-
-Image::Type Image::type() const {
-    return Image::Type(FreeImage_GetImageType(m_image));
-}
-
-RGBQUAD Image::getPixel(unsigned int x, unsigned int y) const {
-    RGBQUAD r;
-    if(!FreeImage_GetPixelColor(m_image, x, y, &r)) {
+RGBTriple RGBImage::getPixel(int x, int y) const {
+    RGBQUAD quad;
+    if(!FreeImage_GetPixelColor(m_image, x, y, &quad)) {
         throw runtime_error("Cannot read pixel");
     }
-    return r;
+    return {quad.rgbRed, quad.rgbGreen, quad.rgbBlue};
 }
 
-void Image::setPixel(unsigned int x, unsigned int y, RGBQUAD color) {
-    if(!FreeImage_SetPixelColor(m_image, x, y, &color)) {
+void RGBImage::setPixel(int x, int y, RGBTriple pixel) {
+    RGBQUAD quad = {pixel.rgbtRed, pixel.rgbtGreen, pixel.rgbtBlue, 0};
+    if(!FreeImage_SetPixelColor(m_image, x, y, &quad)) {
         throw runtime_error("Cannot set pixel value");
     }
 }
 
-const byte* Image::getBits() const {
-    return FreeImage_GetBits(m_image);
-}
-
-const byte* Image::getScanLine(int scanLine) const {
-    return FreeImage_GetScanLine(m_image, scanLine);
-}
-
-Image Image::from_greyscale(vector<unsigned short> vec, int width, int height, bool flip) {
-    if(vec.size() != static_cast<size_t>(width * height * 2)) {
+RGBImage RGBImage::fromRawData(vector<RGBTriple> vec, int width, int height, bool flip) {
+    if(vec.size() != static_cast<size_t>(width * height)) {
         throw runtime_error("Input vector has wrong size");
     }
-    FIBITMAP* img = FreeImage_AllocateT(FIT_UINT16, width, height, 16);
-    int scanline_iter = flip? height-1 : 0,
-        scanline_iter_incr = flip? -1 : 1;
-    for(int i = 0 ; i != height ; ++i, scanline_iter += scanline_iter_incr) {
-        unsigned short* scanline = reinterpret_cast<unsigned short*>(FreeImage_GetScanLine(img, i));
-        for(int j = 0 ; j != width ; ++j)
-            scanline[j] = vec[static_cast<size_t>(scanline_iter*width + j)];
+    RGBImage img(width, height);
+    for(int y = 0 ; y != height ; ++y) {
+        int scanlineOffset = width * y;
+        for(int x = 0 ; x != width ; ++x) {
+            RGBTriple pixel = vec[x + scanlineOffset];
+            img.setPixel(x, flip? height-y : y, pixel);
+        }
     }
 
-    Image i(img);
-
-    return i;
+    return img;
 }
 
-bool Image::save(string const& filename, Format f) const {
-    switch(f) {
-        case Format::Bmp:
-            return FreeImage_Save(FIF_BMP, m_image, filename.c_str(), BMP_DEFAULT);
-        case Format::BmpRle:
-            return FreeImage_Save(FIF_BMP, m_image, filename.c_str(), BMP_SAVE_RLE);
-        case Format::Png:
-            return FreeImage_Save(FIF_PNG, m_image, filename.c_str(), PNG_DEFAULT);
-        default:
-            throw runtime_error("Unknown image format");
+RGBImage RGBImage::load(string const& filename)
+{
+    FREE_IMAGE_FORMAT fif = FreeImage_GetFileType(filename.c_str());
+    if(fif == FIF_UNKNOWN) {
+        fif = FreeImage_GetFIFFromFilename(filename.c_str());
+        if(fif == FIF_UNKNOWN)
+            throw runtime_error("Cannot open image");
     }
+    auto fi = FreeImage_Load(fif, filename.c_str());
+    if(!fi) {
+        throw runtime_error("Cannot open image");
+    }
+    return RGBImage(fi);
 }
