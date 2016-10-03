@@ -7,17 +7,23 @@ using namespace std;
 
 GreyscaleImage::GreyscaleImage(int width, int height) :
     Image<byte>(width, height, ImageType::Bitmap, 8, 0xFF, 0xFF, 0xFF)
-{ }
+{
+    buildPalette();
+}
 
 GreyscaleImage::GreyscaleImage(FIBITMAP* fi) :
     Image<byte>(fi)
-{  }
+{
+    buildPalette();
+}
 
 GreyscaleImage::~GreyscaleImage() { }
 
 GreyscaleImage::GreyscaleImage(GreyscaleImage const& other) :
     Image<byte>(other)
-{ }
+{
+    buildPalette();
+}
 
 GreyscaleImage& GreyscaleImage::operator=(GreyscaleImage const& other) {
     *static_cast<Image<byte>*>(this) = other;
@@ -25,16 +31,15 @@ GreyscaleImage& GreyscaleImage::operator=(GreyscaleImage const& other) {
 }
 
 byte GreyscaleImage::getPixel(int x, int y) const {
-    RGBQUAD quad;
-    if(!FreeImage_GetPixelColor(m_image, x, y, &quad)) {
+    byte pixel;
+    if(!FreeImage_GetPixelIndex(m_image, x, y, &pixel)) {
         throw runtime_error("Cannot read pixel");
     }
-    return quad.rgbRed;
+    return pixel;
 }
 
 void GreyscaleImage::setPixel(int x, int y, byte pixel) {
-    RGBQUAD quad = {pixel, pixel, pixel, 0};
-    if(!FreeImage_SetPixelColor(m_image, x, y, &quad)) {
+    if(!FreeImage_SetPixelIndex(m_image, x, y, &pixel)) {
         throw runtime_error("Cannot set pixel value");
     }
 }
@@ -68,6 +73,15 @@ GreyscaleImage GreyscaleImage::load(string const& filename)
         throw runtime_error("Cannot open image");
     }
     return GreyscaleImage(fi);
+}
+
+void GreyscaleImage::buildPalette() {
+    RGBQuad* palette = FreeImage_GetPalette(m_image);
+    for(int i = 0 ; i != 256 ; ++i) {
+        palette[i].rgbRed = i;
+        palette[i].rgbGreen = i;
+        palette[i].rgbBlue = i;
+    }
 }
 
 RGBImage::RGBImage(int width, int height) :

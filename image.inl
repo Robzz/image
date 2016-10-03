@@ -93,7 +93,7 @@ const T* Image<T>::getScanline(int scanline) const {
 template <class T>
 void Image<T>::save(std::string const& filename, ImageFormat f) const {
     int flags = (f == ImageFormat::BmpRle) ? BMP_SAVE_RLE : 0;
-    if(FreeImage_Save(static_cast<FREE_IMAGE_FORMAT>(f),
+    if(!FreeImage_Save(static_cast<FREE_IMAGE_FORMAT>(f),
                       m_image, filename.c_str(), flags)) {
         throw std::runtime_error("Cannot save image");
     }

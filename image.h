@@ -151,6 +151,7 @@ class GreyscaleImage : public Image<byte> {
 
     private:
         explicit GreyscaleImage(FIBITMAP* fi);
+        void buildPalette();
 };
 
 /**
