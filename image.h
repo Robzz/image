@@ -212,6 +212,64 @@ class RGBImage : public Image<RGBTriple> {
         explicit RGBImage(FIBITMAP* fi);
 };
 
+/**
+  * \class BinaryImage
+  * \brief Represents a binary image.
+  */
+class BinaryImage : public Image<bool> {
+    public:
+        /**
+          * \brief Construct an empty binary image of specified dimensions.
+          * \param width Image width
+          * \param height Image height
+          */
+        BinaryImage(int width, int height);
+
+        /* Destructor */
+        virtual ~BinaryImage();
+
+        /**
+          * \brief Copy constructor.
+          */
+        BinaryImage(BinaryImage const& other);
+
+        /**
+          * \brief Assignment operator.
+          */
+        BinaryImage& operator=(BinaryImage const& other);
+
+        /**
+          * \brief Move constructor.
+          */
+        BinaryImage(BinaryImage&& other);
+
+        /**
+          * \brief Move-assignment operator.
+          */
+        BinaryImage& operator=(BinaryImage&& other);
+
+        /**
+          * \brief Return the color of the specified pixel.
+          */
+        virtual bool getPixel(int x, int y) const;
+
+        /**
+          * \brief Set the color of the specified pixel.
+          */
+        virtual void setPixel(int x, int y, bool pixel);
+
+        /**
+          * \brief Construct an image from a file.
+          * In theory, any format supported by the FreeImage library should work.
+          */
+        static BinaryImage load(std::string const& filename);
+
+        static BinaryImage fromRawData(std::vector<bool> vec, int width, int height, bool flip = false);
+
+    private:
+        explicit BinaryImage(FIBITMAP* fi);
+        void buildPalette();
+};
 #include "image.inl"
 
 #endif
