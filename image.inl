@@ -91,6 +91,20 @@ const T* Image<T>::getScanline(int scanline) const {
 }
 
 template <class T>
+void Image<T>::blit(ImageCoords c, Rect r, Image<T> const& other) {
+    int h = m_height - c.y;
+    int w = m_width - c.x;
+    h = (r.height > h) ? h : r.height;
+    w = (r.width > w) ? w : r.width;
+
+    for(int ix = 0 ; ix != w ; ++ix) {
+        for(int iy = 0 ; iy != h ; ++iy) {
+            setPixel(c.x + ix, c.y + iy, other.getPixel(r.x + ix, r.y + iy));
+        }
+    }
+}
+
+template <class T>
 void Image<T>::save(std::string const& filename, ImageFormat f) const {
     int flags = (f == ImageFormat::BmpRle) ? BMP_SAVE_RLE : 0;
     if(!FreeImage_Save(static_cast<FREE_IMAGE_FORMAT>(f),

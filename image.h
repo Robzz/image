@@ -14,6 +14,18 @@ using byte = unsigned char;
 using RGBTriple= RGBTRIPLE;
 using RGBQuad = RGBQUAD;
 
+struct ImageCoords {
+    int x;
+    int y;
+};
+
+struct Rect {
+    int x;
+    int y;
+    int width;
+    int height;
+};
+
 /**
   * \enum ImageType
   * \brief Enumerate image types
@@ -76,6 +88,8 @@ class Image {
 
         virtual const T* getBits() const;
         virtual const T* getScanline(int scanline) const;
+
+        void blit(ImageCoords c, Rect r, Image<T> const& other);
 
         /**
           * \brief Save an image to the disk.
