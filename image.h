@@ -89,6 +89,9 @@ class Image {
         virtual const T* getBits() const;
         virtual const T* getScanline(int scanline) const;
 
+        void flipX();
+        void flipY();
+
         void blit(ImageCoords c, Rect r, Image<T> const& other);
 
         /**

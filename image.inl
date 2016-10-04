@@ -91,6 +91,32 @@ const T* Image<T>::getScanline(int scanline) const {
 }
 
 template <class T>
+void Image<T>::flipX() {
+    auto w = m_width / 2;
+    for(int y = 0 ; y != m_height ; ++y) {
+        for(int x = 0 ; x != w ; ++x) {
+            T t = getPixel(x, y);
+            int xFlip = m_width - x - 1;
+            setPixel(x, y, getPixel(x, xFlip));
+            setPixel(x, xFlip, t);
+        }
+    }
+}
+
+template <class T>
+void Image<T>::flipY() {
+    auto h = m_height / 2;
+    for(int y = 0 ; y != h ; ++y) {
+        for(int x = 0 ; x != m_width ; ++x) {
+            T t = getPixel(x, y);
+            int yFlip = m_height - y - 1;
+            setPixel(x, y, getPixel(x, yFlip));
+            setPixel(x, yFlip, t);
+        }
+    }
+}
+
+template <class T>
 void Image<T>::blit(ImageCoords c, Rect r, Image<T> const& other) {
     int h = m_height - c.y;
     int w = m_width - c.x;
