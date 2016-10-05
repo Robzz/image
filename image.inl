@@ -66,6 +66,19 @@ Image<T>& Image<T>::operator=(Image<T>&& other) {
 }
 
 template <class T>
+bool Image<T>::operator==(Image const& other) {
+    if(m_width != other.m_width || m_height != other.m_height)
+        return false;
+    for(int y = 0 ; y != m_height ; ++y) {
+        for(int x = 0 ; x != m_width ; ++x) {
+            if(getPixel(x, y) != other.getPixel(x, y))
+                return false;
+        }
+    }
+    return true;
+}
+
+template <class T>
 Image<T>::~Image() {
     FreeImage_Unload(m_image);
 }
@@ -97,8 +110,8 @@ void Image<T>::flipX() {
         for(int x = 0 ; x != w ; ++x) {
             T t = getPixel(x, y);
             int xFlip = m_width - x - 1;
-            setPixel(x, y, getPixel(x, xFlip));
-            setPixel(x, xFlip, t);
+            setPixel(x, y, getPixel(xFlip, y));
+            setPixel(xFlip, y, t);
         }
     }
 }

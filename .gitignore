@@ -29,7 +29,11 @@
 *.app
 
 .lvimrc
-CMakeFiles/*
+CMakeFiles
 CMakeCache.txt
 *.cmake
 Makefile
+
+# Test files
+tests/image_tests
+tests/test*.bmp

@@ -74,6 +74,15 @@ class Image {
         Image& operator=(Image&& other);
 
         /**
+         * @brief Compare two images.
+         *
+         * @param other Image to compare with.
+         *
+         * @return true if the images are identical, false otherwise
+         */
+        bool operator==(Image const& other);
+
+        /**
           * \brief Return the width of the image.
           */
         int width() const;
