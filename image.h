@@ -160,12 +160,12 @@ class GreyscaleImage : public Image<byte> {
         /**
           * \brief Return the color of the specified pixel.
           */
-        virtual byte getPixel(int x, int y) const;
+        byte getPixel(int x, int y) const override;
 
         /**
           * \brief Set the color of the specified pixel.
           */
-        virtual void setPixel(int x, int y, byte pixel);
+        void setPixel(int x, int y, byte pixel) override;
 
         /**
           * \brief Construct an image from a file.
@@ -219,12 +219,12 @@ class RGBImage : public Image<RGBTriple> {
         /**
           * \brief Return the color of the specified pixel.
           */
-        virtual RGBTriple getPixel(int x, int y) const;
+        RGBTriple getPixel(int x, int y) const override;
 
         /**
           * \brief Set the color of the specified pixel.
           */
-        virtual void setPixel(int x, int y, RGBTriple pixel);
+        void setPixel(int x, int y, RGBTriple pixel) override;
 
         /**
           * \brief Construct an image from a file.
@@ -277,12 +277,12 @@ class BinaryImage : public Image<bool> {
         /**
           * \brief Return the color of the specified pixel.
           */
-        virtual bool getPixel(int x, int y) const;
+        bool getPixel(int x, int y) const override;
 
         /**
           * \brief Set the color of the specified pixel.
           */
-        virtual void setPixel(int x, int y, bool pixel);
+        void setPixel(int x, int y, bool pixel) override;
 
         /**
           * \brief Construct an image from a file.
