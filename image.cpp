@@ -182,11 +182,134 @@ bool BinaryImage::getPixel(int x, int y) const {
     return b;
 }
 
+bool BinaryImage::isImmediateInterior(int x, int y) const {
+    if(getPixel(x, y)) {
+        bool top, left, bottom, right;
+        top = (y == 0) ? true : getPixel(x, y - 1);
+        left = (x == 0) ? true : getPixel(x - 1, y);
+        bottom = (y == (m_height - 1)) ? true : getPixel(x, y + 1);
+        right = (x == (m_width - 1)) ? true : getPixel(x + 1, y);
+
+        return !(top && left && bottom && right);
+    }
+    return false;
+}
+
+bool BinaryImage::isImmediateExterior(int x, int y) const {
+    if(!getPixel(x, y)) {
+        bool top, left, bottom, right;
+        top = (y == 0) ? false : getPixel(x, y - 1);
+        left = (x == 0) ? false : getPixel(x - 1, y);
+        bottom = (y == (m_height - 1)) ? false : getPixel(x, y + 1);
+        right = (x == (m_width - 1)) ? false : getPixel(x + 1, y);
+
+        return top || left || bottom || right;
+    }
+    return false;
+}
+
 void BinaryImage::setPixel(int x, int y, bool pixel) {
     byte b = pixel ? 1 : 0;
     if(!FreeImage_SetPixelIndex(m_image, x, y, &b)) {
         throw runtime_error("Cannot set pixel value");
     }
+}
+GreyscaleImage BinaryImage::deadReckoning3x3(bool symmetry) const {
+    std::vector<std::vector<ImageCoords>> p;
+    p.reserve(m_height);
+    GreyscaleImage out(m_width, m_height);
+
+    /* Initialization
+     * Set the immediate interior and immediate exterior to 0 and the rest
+     * to the "infinity"
+     */
+    for(int x = 0 ; x != m_height ; ++x) {
+        p.emplace_back(m_width);
+        for(int y = 0 ; y != m_width ; ++y) {
+            if(isImmediateInterior(x, y) || (symmetry && isImmediateExterior(x, y))) {
+                p[x][y] = {x, y};
+                out.setPixel(x, y, 0);
+            }
+            else {
+                p[x][y] = {-1, -1};
+                out.setPixel(x, y, 255);
+            }
+        }
+    }
+
+    float d1 = 1.f, d2 = sqrt(2.f);
+    /* Forward pass
+     * Since we use a different coordinate system than the authors of the
+     * algorithm, the windows must be slightly modified:
+     * Forward:    -     -    -       Backward:  sqrt(2)  1  sqrt(2)
+     *             1     C    -                     -     C     1
+     *          sqrt(2)  1  sqrt(2)                 -     -     -
+     */
+    for(int y = 1 ; y != m_height ; ++y) {
+        for(int x = 1 ; x != m_width - 1 ; ++x) {
+            int i1, i2;
+            if(out.getPixel(x-1, y-1) + d2 < out.getPixel(x, y)) {
+                p[x][y] = p[x-1][y-1];
+                i1 = x - p[x][y].x, i2 = y - p[x][y].y;
+                out.setPixel(x, y, sqrt(i1*i1 + i2*i2));
+            }
+            if(out.getPixel(x, y-1) + d1 < out.getPixel(x, y)) {
+                p[x][y] = p[x][y-1];
+                i1 = x - p[x][y].x, i2 = y - p[x][y].y;
+                out.setPixel(x, y, sqrt(i1*i1 + i2*i2));
+            }
+            if(out.getPixel(x+1, y-1) + d2 < out.getPixel(x, y)) {
+                p[x][y] = p[x+1][y-1];
+                i1 = x - p[x][y].x, i2 = y - p[x][y].y;
+                out.setPixel(x, y, sqrt(i1*i1 + i2*i2));
+            }
+            if(out.getPixel(x-1, y) + d1 < out.getPixel(x, y)) {
+                p[x][y] = p[x-1][y];
+                i1 = x - p[x][y].x, i2 = y - p[x][y].y;
+                out.setPixel(x, y, sqrt(i1*i1 + i2*i2));
+            }
+        }
+    }
+
+    // Backward pass
+    for(int y = m_height- 2 ; y >= 0 ; --y) {
+        for(int x = m_width - 2 ; x != 0 ; --x) {
+            int i1, i2;
+            if(out.getPixel(x+1, y+1) + d2 < out.getPixel(x, y)) {
+                p[x][y] = p[x+1][y+1];
+                i1 = x - p[x][y].x, i2 = y - p[x][y].y;
+                out.setPixel(x, y, sqrt(i1*i1 + i2*i2));
+            }
+            if(out.getPixel(x, y+1) + d1 < out.getPixel(x, y)) {
+                p[x][y] = p[x][y+1];
+                i1 = x - p[x][y].x, i2 = y - p[x][y].y;
+                out.setPixel(x, y, sqrt(i1*i1 + i2*i2));
+            }
+            if(out.getPixel(x-1, y+1) + d2 < out.getPixel(x, y)) {
+                p[x][y] = p[x-1][y+1];
+                i1 = x - p[x][y].x, i2 = y - p[x][y].y;
+                out.setPixel(x, y, sqrt(i1*i1 + i2*i2));
+            }
+            if(out.getPixel(x+1, y) + d1 < out.getPixel(x, y)) {
+                p[x][y] = p[x+1][y];
+                i1 = x - p[x][y].x, i2 = y - p[x][y].y;
+                out.setPixel(x, y, sqrt(i1*i1 + i2*i2));
+            }
+        }
+    }
+
+    // Final pass: mark the inside/outside and map to the correct output range
+    for(int y = 0 ; y != m_height ; ++y) {
+        for(int x = 0 ; x != m_width ; ++x) {
+            byte outPixel = out.getPixel(x, y);
+            char dist = getPixel(x, y) ? clamp<byte>(0, 127, outPixel) :
+                                        -clamp<byte>(0, 128, outPixel);
+            out.setPixel(x, y, dist >= 0 ? static_cast<byte>(dist) + 128 :
+                                           128 - static_cast<byte>(-dist));
+        }
+    }
+
+    return out;
 }
 
 BinaryImage BinaryImage::fromRawData(vector<bool> vec, int width, int height, bool flip) {

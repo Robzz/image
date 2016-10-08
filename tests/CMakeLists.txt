@@ -1,4 +1,4 @@
-set(image_tests_SOURCES main.cpp basics.cpp)
+set(image_tests_SOURCES main.cpp basics.cpp transforms.cpp)
 add_executable(image_tests ${image_tests_SOURCES})
 target_link_libraries(image_tests image)
 get_directory_property(parent_dir DIRECTORY . PARENT_DIRECTORY)

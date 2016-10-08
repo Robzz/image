@@ -9,6 +9,7 @@
 #include <vector>
 #include <string>
 #include <FreeImage.h>
+#include <cmath>
 
 using byte = unsigned char;
 using RGBTriple= RGBTRIPLE;
@@ -25,6 +26,11 @@ struct Rect {
     int width;
     int height;
 };
+
+template <class T>
+T clamp(T a, T b, T f) {
+    return std::max(std::min(f, b), a);
+}
 
 /**
   * \enum ImageType
@@ -283,6 +289,23 @@ class BinaryImage : public Image<bool> {
           * \brief Set the color of the specified pixel.
           */
         void setPixel(int x, int y, bool pixel) override;
+
+        bool isImmediateInterior(int x, int y) const;
+        bool isImmediateExterior(int x, int y) const;
+
+        /**
+         * \brief Return the signed distance transform of the image, using
+         * the "Dead Reckoning" algorithm.
+         *
+         * Precision is limited by the underlying pixel type. The output range
+         * is [-128, 127] mapped to the integer range [0, 255] in 8 bit
+         * precision. Values out of the range are clamped.
+         *
+         * \param symmetry If set to true, the transform will be symmetrical
+         * under complement.
+         * \return Signed distance transform greyscale image
+         */
+        GreyscaleImage deadReckoning3x3(bool symmetry = false) const;
 
         /**
           * \brief Construct an image from a file.
