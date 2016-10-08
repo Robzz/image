@@ -1,5 +1,6 @@
 set(image_tests_SOURCES main.cpp basics.cpp)
 add_executable(image_tests ${image_tests_SOURCES})
 target_link_libraries(image_tests image)
-target_include_directories(image_tests PRIVATE ${CMAKE_SOURCE_DIR})
+get_directory_property(parent_dir DIRECTORY . PARENT_DIRECTORY)
+target_include_directories(image_tests PRIVATE ${parent_dir})
 set_property(TARGET image_tests PROPERTY CXX_STANDARD 14)
