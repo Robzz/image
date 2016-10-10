@@ -144,6 +144,15 @@ void Image<T>::blit(ImageCoords c, Rect r, Image<T> const& other) {
 }
 
 template <class T>
+void Image<T>::crop(Rect r) {
+    FIBITMAP* croppedImg = FreeImage_Copy(m_image, r.x, r.y + r.height, r.x + r.width, r.y);
+    m_width = r.width;
+    m_height = r.height;
+    FreeImage_Unload(m_image);
+    m_image = croppedImg;
+}
+
+template <class T>
 void Image<T>::save(std::string const& filename, ImageFormat f) const {
     int flags = (f == ImageFormat::BmpRle) ? BMP_SAVE_RLE : 0;
     if(!FreeImage_Save(static_cast<FREE_IMAGE_FORMAT>(f),

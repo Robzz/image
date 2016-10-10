@@ -51,3 +51,18 @@ TEST_CASE("Test flip functions", "[flip]") {
     img2.flipX();
     REQUIRE(img2 == img);
 }
+
+TEST_CASE("Test crop", "[crop]") {
+    GreyscaleImage img(5, 5);
+    for(int y = 0 ; y != 5 ; ++y) {
+        for(int x = 0 ; x != 5 ; ++x) {
+            img.setPixel(x, y, y);
+        }
+    }
+    img.crop({1, 1, 3, 3});
+    for(int y = 0 ; y != 3 ; ++y) {
+        for(int x = 0 ; x != 3 ; ++x) {
+            REQUIRE(img.getPixel(x, y) == (y + 1));
+        }
+    }
+}

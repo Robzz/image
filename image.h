@@ -56,13 +56,14 @@ enum class ImageType : typename std::underlying_type<FREE_IMAGE_TYPE>::type {
   * \enum ImageFormat
   * \brief Represent the supported image file formats.
   */
-enum class ImageFormat {
+enum class ImageFormat : typename std::underlying_type<FREE_IMAGE_FORMAT>::type {
     /** Bitmap format */
-    Bmp,
-    /** Bitmap format, with run length encoding */
+    Bmp = FIF_BMP,
+    /** Bitmap format, with run length encoding. Only available for 4-8 bpp
+     * bitmaps. */
     BmpRle,
     /** PNG format */
-    Png
+    Png = FIF_PNG
 };
 
 template <class T>
@@ -108,6 +109,7 @@ class Image {
         void flipY();
 
         void blit(ImageCoords c, Rect r, Image<T> const& other);
+        void crop(Rect r);
 
         /**
           * \brief Save an image to the disk.
@@ -188,7 +190,7 @@ class GreyscaleImage : public Image<byte> {
 
 /**
   * \class RGBImage
-  * \brief Represents an 8-bit greyscale image.
+  * \brief Represents a 24-bit RGB image.
   */
 class RGBImage : public Image<RGBTriple> {
     public:
