@@ -5,6 +5,35 @@
 
 using namespace std;
 
+bool Rect::operator==(Rect const& other) {
+    return (x == other.x) && (y == other.y) &&
+           (width == other.width) && (height == other.height);
+}
+
+bool Rect::isIn(Rect const& other) {
+    ImageCoords p1({x, y}), p2({x + width, y + height});
+    return p1.isIn(other) && p2.isIn(other);
+}
+
+bool ImageCoords::operator==(ImageCoords const& other) {
+    return (x == other.x) && (y == other.y);
+}
+
+bool ImageCoords::isIn(Rect const& r) {
+    return (x >= r.x) && (x < (r.x + r.width)) &&
+           (y >= r.y) && (y < (r.y + r.height));
+}
+
+ostream& operator<<(ostream& s, ImageCoords const& c) {
+    s << "(" << c.x << ", " << c.y << ")";
+    return s;
+}
+
+ostream& operator<<(ostream& s, Rect const& r) {
+    s << "(" << r.x << ", " << r.y << ", " << r.width << ", " << r.height <<  ")";
+    return s;
+}
+
 GreyscaleImage::GreyscaleImage(int width, int height) :
     Image<byte>(width, height, ImageType::Bitmap, 8, 0xFF, 0xFF, 0xFF)
 {

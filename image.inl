@@ -104,6 +104,22 @@ const T* Image<T>::getScanline(int scanline) const {
 }
 
 template <class T>
+Rect Image<T>::getAABB(T backgroundColor) const {
+    int xMin = m_width - 1, xMax = 0, yMin = m_height - 1, yMax = 0;
+    for(int y = 0 ; y != m_height ; ++y) {
+        for(int x = 0 ; x != m_width ; ++x) {
+            if(getPixel(x, y) != backgroundColor) {
+                xMin = (x < xMin) ? x : xMin;
+                xMax = (x > xMax) ? x : xMax;
+                yMin = (y < yMin) ? y : yMin;
+                yMax = (y > yMax) ? y : yMax;
+            }
+        }
+    }
+    return {xMin, yMin, xMax - xMin, yMax - yMin};
+}
+
+template <class T>
 void Image<T>::flipX() {
     auto w = m_width / 2;
     for(int y = 0 ; y != m_height ; ++y) {

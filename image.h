@@ -10,22 +10,34 @@
 #include <string>
 #include <FreeImage.h>
 #include <cmath>
+#include <iostream>
 
 using byte = unsigned char;
 using RGBTriple= RGBTRIPLE;
 using RGBQuad = RGBQUAD;
-
-struct ImageCoords {
-    int x;
-    int y;
-};
 
 struct Rect {
     int x;
     int y;
     int width;
     int height;
+
+    bool operator==(Rect const& other);
+
+    bool isIn(Rect const& other);
 };
+
+struct ImageCoords {
+    int x;
+    int y;
+
+    bool isIn(Rect const& r);
+
+    bool operator==(ImageCoords const& other);
+};
+
+std::ostream& operator<<(std::ostream& s, ImageCoords const& c);
+std::ostream& operator<<(std::ostream& s, Rect const& r);
 
 template <class T>
 T clamp(T a, T b, T f) {
@@ -104,6 +116,8 @@ class Image {
 
         virtual const T* getBits() const;
         virtual const T* getScanline(int scanline) const;
+
+        Rect getAABB(T backgroundColor) const;
 
         void flipX();
         void flipY();
